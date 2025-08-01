@@ -1,0 +1,307 @@
+-- ===================================================
+-- 系統開發管理 - 數據庫表結構
+-- 數據庫：PostgreSQL
+-- 生成時間：2024-08-01
+-- ===================================================
+
+-- 刪除已存在的表（如果需要重新創建）
+-- DROP TABLE IF EXISTS "api_components" CASCADE;
+-- DROP TABLE IF EXISTS "function_categories" CASCADE;
+-- DROP TABLE IF EXISTS "api_systems" CASCADE;
+-- DROP TABLE IF EXISTS "knowledge_base" CASCADE;
+-- DROP TABLE IF EXISTS "data_dictionary" CASCADE;
+-- DROP TABLE IF EXISTS "Session" CASCADE;
+-- DROP TABLE IF EXISTS "Account" CASCADE;
+-- DROP TABLE IF EXISTS "VerificationToken" CASCADE;
+-- DROP TABLE IF EXISTS "User" CASCADE;
+
+-- ===================================================
+-- 用戶認證相關表（NextAuth.js）
+-- ===================================================
+
+-- 用戶表
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL,
+    "name" TEXT,
+    "email" TEXT NOT NULL,
+    "emailVerified" TIMESTAMP(3),
+    "image" TEXT,
+    "password" TEXT,
+    "role" TEXT NOT NULL DEFAULT 'user',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- 帳戶表（用於第三方登錄）
+CREATE TABLE "Account" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "providerAccountId" TEXT NOT NULL,
+    "refresh_token" TEXT,
+    "access_token" TEXT,
+    "expires_at" INTEGER,
+    "token_type" TEXT,
+    "scope" TEXT,
+    "id_token" TEXT,
+    "session_state" TEXT,
+
+    CONSTRAINT "Account_pkey" PRIMARY KEY ("id")
+);
+
+-- 會話表
+CREATE TABLE "Session" (
+    "id" TEXT NOT NULL,
+    "sessionToken" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
+);
+
+-- 驗證令牌表
+CREATE TABLE "VerificationToken" (
+    "identifier" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL
+);
+
+-- ===================================================
+-- 業務數據表
+-- ===================================================
+
+-- 數據字典表
+CREATE TABLE "data_dictionary" (
+    "id" TEXT NOT NULL,
+    "name" VARCHAR(100) NOT NULL,
+    "abbreviation" VARCHAR(20),
+    "fullName" VARCHAR(200) NOT NULL,
+    "dataType" VARCHAR(50),
+    "description" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "version" VARCHAR(10) NOT NULL DEFAULT '1.0',
+    "remarks" TEXT,
+    "createdBy" TEXT NOT NULL,
+    "updatedBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "data_dictionary_pkey" PRIMARY KEY ("id")
+);
+
+-- 知識庫表
+CREATE TABLE "knowledge_base" (
+    "id" TEXT NOT NULL,
+    "category" VARCHAR(50) NOT NULL,
+    "code" VARCHAR(20) NOT NULL,
+    "title" VARCHAR(200) NOT NULL,
+    "description" TEXT NOT NULL,
+    "solution" TEXT,
+    "keywords" VARCHAR(500),
+    "attachments" TEXT,
+    "priority" VARCHAR(10) NOT NULL DEFAULT '中',
+    "status" VARCHAR(20) NOT NULL DEFAULT '草稿',
+    "createdBy" TEXT NOT NULL,
+    "updatedBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "knowledge_base_pkey" PRIMARY KEY ("id")
+);
+
+-- API 系統表
+CREATE TABLE "api_systems" (
+    "id" TEXT NOT NULL,
+    "systemCode" VARCHAR(20) NOT NULL,
+    "systemName" VARCHAR(100) NOT NULL,
+    "systemType" VARCHAR(100),
+    "description" TEXT,
+    "version" VARCHAR(20),
+    "status" VARCHAR(20) NOT NULL DEFAULT '運行中',
+    "createdBy" TEXT NOT NULL,
+    "updatedBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "api_systems_pkey" PRIMARY KEY ("id")
+);
+
+-- 功能分類表
+CREATE TABLE "function_categories" (
+    "id" TEXT NOT NULL,
+    "systemId" TEXT NOT NULL,
+    "categoryCode" VARCHAR(50) NOT NULL,
+    "categoryName" VARCHAR(100) NOT NULL,
+    "description" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdBy" TEXT NOT NULL,
+    "updatedBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "function_categories_pkey" PRIMARY KEY ("id")
+);
+
+-- API 組件表
+CREATE TABLE "api_components" (
+    "id" TEXT NOT NULL,
+    "systemId" TEXT NOT NULL,
+    "categoryId" TEXT NOT NULL,
+    "name" VARCHAR(100) NOT NULL,
+    "version" VARCHAR(20) NOT NULL,
+    "description" TEXT,
+    "developer" VARCHAR(100),
+    "endpointPath" VARCHAR(500),
+    "parameters" TEXT,
+    "returnDescription" TEXT,
+    "dependencies" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdBy" TEXT NOT NULL,
+    "updatedBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "api_components_pkey" PRIMARY KEY ("id")
+);
+
+-- ===================================================
+-- 創建唯一約束
+-- ===================================================
+
+-- 用戶表唯一約束
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- 帳戶表唯一約束
+CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
+
+-- 會話表唯一約束
+CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
+
+-- 驗證令牌表唯一約束
+CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token");
+CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
+
+-- 知識庫編號唯一約束
+CREATE UNIQUE INDEX "knowledge_base_code_key" ON "knowledge_base"("code");
+
+-- 系統代碼唯一約束
+CREATE UNIQUE INDEX "api_systems_systemCode_key" ON "api_systems"("systemCode");
+
+-- ===================================================
+-- 創建外鍵約束
+-- ===================================================
+
+-- 帳戶表外鍵
+ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- 會話表外鍵
+ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- 數據字典外鍵
+ALTER TABLE "data_dictionary" ADD CONSTRAINT "data_dictionary_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "data_dictionary" ADD CONSTRAINT "data_dictionary_updatedBy_fkey" FOREIGN KEY ("updatedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- 知識庫外鍵
+ALTER TABLE "knowledge_base" ADD CONSTRAINT "knowledge_base_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "knowledge_base" ADD CONSTRAINT "knowledge_base_updatedBy_fkey" FOREIGN KEY ("updatedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- API 系統外鍵
+ALTER TABLE "api_systems" ADD CONSTRAINT "api_systems_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "api_systems" ADD CONSTRAINT "api_systems_updatedBy_fkey" FOREIGN KEY ("updatedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- 功能分類外鍵
+ALTER TABLE "function_categories" ADD CONSTRAINT "function_categories_systemId_fkey" FOREIGN KEY ("systemId") REFERENCES "api_systems"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "function_categories" ADD CONSTRAINT "function_categories_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "function_categories" ADD CONSTRAINT "function_categories_updatedBy_fkey" FOREIGN KEY ("updatedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- API 組件外鍵
+ALTER TABLE "api_components" ADD CONSTRAINT "api_components_systemId_fkey" FOREIGN KEY ("systemId") REFERENCES "api_systems"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "api_components" ADD CONSTRAINT "api_components_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "function_categories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "api_components" ADD CONSTRAINT "api_components_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "api_components" ADD CONSTRAINT "api_components_updatedBy_fkey" FOREIGN KEY ("updatedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- ===================================================
+-- 創建索引以提高查詢性能
+-- ===================================================
+
+-- 數據字典索引
+CREATE INDEX "data_dictionary_name_idx" ON "data_dictionary"("name");
+CREATE INDEX "data_dictionary_createdBy_idx" ON "data_dictionary"("createdBy");
+CREATE INDEX "data_dictionary_isActive_idx" ON "data_dictionary"("isActive");
+
+-- 知識庫索引
+CREATE INDEX "knowledge_base_category_idx" ON "knowledge_base"("category");
+CREATE INDEX "knowledge_base_status_idx" ON "knowledge_base"("status");
+CREATE INDEX "knowledge_base_createdBy_idx" ON "knowledge_base"("createdBy");
+
+-- API 系統索引
+CREATE INDEX "api_systems_status_idx" ON "api_systems"("status");
+CREATE INDEX "api_systems_createdBy_idx" ON "api_systems"("createdBy");
+
+-- 功能分類索引
+CREATE INDEX "function_categories_systemId_idx" ON "function_categories"("systemId");
+CREATE INDEX "function_categories_isActive_idx" ON "function_categories"("isActive");
+
+-- API 組件索引
+CREATE INDEX "api_components_systemId_idx" ON "api_components"("systemId");
+CREATE INDEX "api_components_categoryId_idx" ON "api_components"("categoryId");
+CREATE INDEX "api_components_isActive_idx" ON "api_components"("isActive");
+
+-- ===================================================
+-- 添加表註釋
+-- ===================================================
+
+COMMENT ON TABLE "User" IS '用戶表 - 存儲系統用戶信息';
+COMMENT ON TABLE "Account" IS '帳戶表 - NextAuth.js 第三方登錄信息';
+COMMENT ON TABLE "Session" IS '會話表 - NextAuth.js 用戶會話信息';
+COMMENT ON TABLE "VerificationToken" IS '驗證令牌表 - NextAuth.js 驗證令牌';
+COMMENT ON TABLE "data_dictionary" IS '數據字典表 - 存儲系統術語和字段定義';
+COMMENT ON TABLE "knowledge_base" IS '知識庫表 - 存儲開發和運維知識';
+COMMENT ON TABLE "api_systems" IS 'API 系統表 - 存儲系統基本信息';
+COMMENT ON TABLE "function_categories" IS '功能分類表 - 存儲系統功能模組分類';
+COMMENT ON TABLE "api_components" IS 'API 組件表 - 存儲 API 和組件詳細信息';
+
+-- ===================================================
+-- 插入初始數據（可選）
+-- ===================================================
+
+-- 插入管理員用戶（密碼：admin123，已使用 bcrypt 加密）
+INSERT INTO "User" ("id", "email", "name", "password", "role") 
+VALUES ('temp-user-id', 'admin@example.com', 'Admin User', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewHBRnbwpcKkQBuC', 'admin')
+ON CONFLICT ("email") DO NOTHING;
+
+-- 插入示例數據字典
+INSERT INTO "data_dictionary" ("id", "name", "abbreviation", "fullName", "dataType", "description", "createdBy")
+VALUES 
+('dict-1', 'MO', 'MO', 'Manufacturing Order', 'VARCHAR(20)', '生產工單編號', 'temp-user-id'),
+('dict-2', '客戶代碼', 'CUST_CODE', 'Customer Code', 'VARCHAR(10)', '客戶唯一標識碼', 'temp-user-id')
+ON CONFLICT ("id") DO NOTHING;
+
+-- 插入示例系統
+INSERT INTO "api_systems" ("id", "systemCode", "systemName", "systemType", "description", "version", "createdBy")
+VALUES 
+('sys-1', 'ERP', 'ERP系統', '企業資源規劃', '企業資源規劃系統，負責財務、人力資源、供應鏈管理', '2.1.0', 'temp-user-id'),
+('sys-2', 'MES', 'MES系統', '製造執行系統', '製造執行系統，負責生產過程管理和監控', '1.8.0', 'temp-user-id')
+ON CONFLICT ("systemCode") DO NOTHING;
+
+-- 插入示例功能分類
+INSERT INTO "function_categories" ("id", "systemId", "categoryCode", "categoryName", "description", "createdBy")
+VALUES 
+('cat-1', 'sys-1', 'USER_MGMT', '用戶管理', '用戶相關功能模組', 'temp-user-id'),
+('cat-2', 'sys-1', 'FINANCE', '財務管理', '財務相關功能模組', 'temp-user-id'),
+('cat-3', 'sys-2', 'PRODUCTION', '生產管理', '生產相關功能模組', 'temp-user-id')
+ON CONFLICT ("id") DO NOTHING;
+
+-- 插入示例知識庫
+INSERT INTO "knowledge_base" ("id", "category", "code", "title", "description", "solution", "keywords", "priority", "status", "createdBy")
+VALUES 
+('kb-1', '開發類', 'DEV001', 'React 組件開發最佳實踐', 'React 組件開發中的常見問題及解決方案', '1. 使用函數組件和 Hooks\n2. 適當使用 useMemo 和 useCallback', 'React, 組件, Hooks', '高', '已發布', 'temp-user-id'),
+('kb-2', '運維類', 'OPS001', '數據庫性能優化', '數據庫查詢慢的問題分析與優化', '1. 檢查索引使用情況\n2. 分析查詢執行計劃', '數據庫, 性能, 優化', '中', '已發布', 'temp-user-id')
+ON CONFLICT ("code") DO NOTHING;
+
+-- ===================================================
+-- 結束
+-- ===================================================
